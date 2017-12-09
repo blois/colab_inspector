@@ -91,7 +91,7 @@ export class TreeItem<T> extends HTMLElement {
       item.dataConverter = this.dataConverter;
       this.itemsContainer_.appendChild(item);
     }
-    window.resizeOutput();
+    // window.resizeOutput();
   }
 
   collapse() {
@@ -99,8 +99,8 @@ export class TreeItem<T> extends HTMLElement {
       this.itemsContainer_.lastElementChild.remove();
     }
     this.classList.remove('expanded');
-    window.resizeOutput();
+    // window.resizeOutput();
   }
 }
 
-document.registerElement('inspect-tree-item', TreeItem);
+// document.registerElement('inspect-tree-item', TreeItem);

@@ -11,4 +11,7 @@
     "module": "commonjs",
     "removeComments": true,
   },
+  "include": [
+    "source/**/*.ts",
+  ]
 }

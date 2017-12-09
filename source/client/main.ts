@@ -1,3 +1,4 @@
 import {inspect} from './inspect';
 
-window.inspect = inspect;
+(<any>window)['inspect'] = inspect;
+
