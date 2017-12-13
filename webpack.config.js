@@ -1,8 +1,8 @@
 module.exports = {
   entry: './source/client/main.ts',
   output: {
-    path: __dirname + '/dist/inspect/resources',
-    filename: 'inspect.bundle.js',
+    path: __dirname + '/dist/inspector/resources',
+    filename: 'inspector.bundle.js',
   },
   resolve: {
     // Add '.ts' and '.tsx' as resolvable extensions.

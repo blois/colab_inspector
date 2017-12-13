@@ -25,6 +25,6 @@ setup(
     ),
     include_package_data=True,
     package_data={
-        'inspect': ['resources/inspect.bundle.js',],
+        'inspector': ['resources/inspector.bundle.js',],
     },
 )
