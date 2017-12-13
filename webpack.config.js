@@ -1,7 +1,7 @@
 module.exports = {
   entry: './source/client/main.ts',
   output: {
-    path: __dirname + '/dist/resources',
+    path: __dirname + '/dist/inspect/resources',
     filename: 'inspect.bundle.js',
   },
   resolve: {
