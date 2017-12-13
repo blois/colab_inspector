@@ -28,7 +28,6 @@ interface Document {
 
 interface Window {
   resizeOutput(): void;
-  inspect(path: string): void;
 }
 
 interface HTMLElement {

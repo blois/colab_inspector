@@ -21,18 +21,21 @@
     "karma-chrome-launcher": "^2.2.0",
     "karma-jasmine": "^1.1.1",
     "karma-mocha": "^1.3.0",
+    "karma-sourcemap-loader": "^0.3.7",
     "karma-typescript": "^3.0.8",
     "karma-typescript-preprocessor2": "^1.2.1",
     "karma-webpack": "^2.0.6",
     "mocha": "^4.0.1",
+    "source-map-loader": "^0.2.3",
     "tslint": "^5.7.0",
     "typescript": "^2.6.0",
     "webpack": "^3.10.0"
   },
   "scripts": {
-    "build": "node node_modules/webpack/bin/webpack.js",
+    "build": "webpack",
     "lint": "tslint source/**/*.ts",
     "fix": "tslint --fix source/**/*.ts",
-    "test_server": "./node_modules/karma/bin/karma start karma.unit.js"
+    "test": "karma start karma.unit.js --single-run --browsers=ChromeHeadless",
+    "test_server": "karma start karma.unit.js"
   }
 }

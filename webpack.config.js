@@ -1,6 +1,4 @@
-const path = require('path');
 module.exports = {
-  // context: path.resolve(__dirname, 'source/client'),
   entry: './source/client/main.ts',
   output: {
     path: __dirname + '/dist/resources',
@@ -10,12 +8,12 @@ module.exports = {
     // Add '.ts' and '.tsx' as resolvable extensions.
     extensions: [".ts", ".tsx", ".js", ".json"]
   },
+  devtool: 'inline-source-map',
   module: {
     rules: [
       // All files with a '.ts' or '.tsx' extension will be handled by 'awesome-typescript-loader'.
       {
         test: /\.tsx?$/,
-        exclude: /node_modules/,
         loader: "awesome-typescript-loader"
       },
 
