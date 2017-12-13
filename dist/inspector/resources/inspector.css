@@ -1,0 +1,38 @@
+inspect-tree-item {
+  display: flow-root;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+inspect-tree-item .title {
+  font-style: italic;
+}
+
+inspect-tree-item .toggle {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 8px;
+  border-color: transparent transparent transparent #6E6E6E;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+inspect-tree-item.expanded>div>.toggle {
+  transform: rotate(90deg);
+}
+
+inspect-tree-item .toggle.empty {
+  visibility: hidden;
+}
+
+.argument {
+  color: #92279A;
+}
+
+.type-int, .type-bool, .type-NoneType {
+  color: #3219D3;
+}
+.type-str {
+  color: #CB3835;
+}
