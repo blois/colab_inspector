@@ -13,18 +13,10 @@ def inspect(target):
 
   Args:
     target: the object to be inspected.
-    uncompiled: True if the uncompiled Javascript mode should be used.
   """
 
   _js.register_callback('inspect.create_specification_for_js',
                            create_specification_for_js)
-
-
-  if uncompiled:
-    script = '<script src="https://localhost:5432/_/ts_scripts.js"></script>'
-  else:
-    script = '<script>%s</script>' % (
-        resources.GetResource(_INSPECT_SRC_PATH) + '//# sourceURL=inspect.js')
 
   object_id = 'id_%s' % str(uuid.uuid4())
   _root[object_id] = target
