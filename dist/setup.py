@@ -25,6 +25,9 @@ setup(
     ),
     include_package_data=True,
     package_data={
-        'google.colab.labs.inspector': ['resources/inspector.bundle.js',],
+        'inspector': [
+            'resources/inspector.bundle.js',
+            'resources/inspector.css',
+        ],
     },
 )
