@@ -1,5 +1,6 @@
-def inspect():
-  return 'inspected'
+from inspector.inspect import inspect
+
+__all__ = ['inspect']
 
 def _jupyter_nbextension_paths():
   # See:
