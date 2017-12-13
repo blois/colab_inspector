@@ -3,11 +3,12 @@
 import json
 import IPython
 import google.colab.output
+from google.colab.output import _js
 import uuid
 
 _root = {}
 
-def inspect(target, uncompiled=False):
+def inspect(target):
   """Displays an interactive inspector for the given object.
 
   Args:
@@ -15,10 +16,9 @@ def inspect(target, uncompiled=False):
     uncompiled: True if the uncompiled Javascript mode should be used.
   """
 
-  return 'here'
-
-  message.RegisterCallback('inspect.create_specification_for_js',
+  _js.register_callback('inspect.create_specification_for_js',
                            create_specification_for_js)
+
 
   if uncompiled:
     script = '<script src="https://localhost:5432/_/ts_scripts.js"></script>'
@@ -29,55 +29,14 @@ def inspect(target, uncompiled=False):
   object_id = 'id_%s' % str(uuid.uuid4())
   _root[object_id] = target
 
-  display(IPython.display.HTML("""
-  <style>
-    inspect-tree-item {
-      display: flow-root;
-      font-family: monospace;
-      font-size: 13px;
-    }
-
-    inspect-tree-item .title {
-      font-style: italic;
-    }
-
-    inspect-tree-item .toggle {
-      width: 0;
-      height: 0;
-      border-style: solid;
-      border-width: 4px 0 4px 8px;
-      border-color: transparent transparent transparent #6E6E6E;
-      display: inline-block;
-      margin-right: 4px;
-    }
-
-    inspect-tree-item.expanded>div>.toggle {
-      transform: rotate(90deg);
-    }
-
-    inspect-tree-item .toggle.empty {
-      visibility: hidden;
-    }
-
-    .argument {
-      color: #92279A;
-    }
-
-    .type-int, .type-bool, .type-NoneType {
-      color: #3219D3;
-    }
-    .type-str {
-      color: #CB3835;
-    }
-  </style>
-  %(script)s
-  <script>
-    inspect("%(id)s");
-  </script>
-  """ % {
-      'script': script,
-      'id': object_id,
-  }))
+  display(IPython.display.HTML('''
+    <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
+    <div>done?</div>
+    <script src='/nbextensions/google.colab.labs.inspector/inspector.bundle.js'></script>
+    <script>
+      inspect('{id}');
+    </script>
+  '''.format(id=object_id)))
 
 
 def create_specification_for_js(paths):
