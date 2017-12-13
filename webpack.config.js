@@ -1,7 +1,7 @@
 module.exports = {
   entry: './source/client/main.ts',
   output: {
-    path: __dirname + '/dist/inspector/resources',
+    path: __dirname + '/dist/google/colab/labs/inspector/resources',
     filename: 'inspector.bundle.js',
   },
   resolve: {

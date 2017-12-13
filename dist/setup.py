@@ -2,7 +2,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 setup(
-    name='colab-inspector',
+    name='google-colab-inspector',
     version='0.0.1a1',
     author='blois',
     author_email='github@blois.us',
@@ -25,6 +25,6 @@ setup(
     ),
     include_package_data=True,
     package_data={
-        'inspector': ['resources/inspector.bundle.js',],
+        'google.colab.labs.inspector': ['resources/inspector.bundle.js',],
     },
 )
