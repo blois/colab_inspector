@@ -59,6 +59,8 @@ def _create_error_spec(exception):
       'error': str(exception),
   }
 
+def foo():
+  pass
 
 def create_specification(path, namespace):
   target = eval(path, namespace)  # pylint: disable=eval-used
