@@ -7,8 +7,3 @@ declare global {
 }
 
 window.inspect = inspect;
-
-export function doSomething(): string {
-  return 'here';
-}
-
