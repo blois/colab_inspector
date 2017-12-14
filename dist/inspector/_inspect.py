@@ -19,7 +19,7 @@ def inspect(target):
   _js.register_callback('inspect.create_specification_for_js',
                            create_specification_for_js)
 
-  object_id = 'id_%s' % str(uuid.uuid4())
+  object_id = 'id_%s' % str(uuid.uuid4()).replace('-', '_')
   _root[object_id] = target
 
   display(IPython.display.HTML('''
