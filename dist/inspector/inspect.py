@@ -39,7 +39,7 @@ def create_specification_for_js(paths):
   Returns:
     The JSON display object to be returned to JS.
   """
-
+  print('paths: %s' % (paths));
   specs = []
   for path in paths:
     try:
