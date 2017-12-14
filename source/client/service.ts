@@ -4,7 +4,7 @@ import {SpecJson} from './specs_json';
 export async function getSpecs(paths: Path[]): Promise<Spec[]> {
   const rawPaths = paths.map((path) => path.toString());
 
-  const result = await google.colab.output.kernel.invokeFunction(
+  const result = await google.colab.kernel.invokeFunction(
       'inspect.create_specification_for_js', [rawPaths], {});
   if (result.status !== 'ok') {
     throw new Error(result.ename);

@@ -7,7 +7,7 @@ declare interface EvaluateResult {
 
 declare interface EvaluateData { [index: string]: {}; }
 
-declare namespace google.colab.output.kernel {
+declare namespace google.colab.kernel {
   export function invokeFunction(
       name: string, args: Array<{}>, kwargs: {}): Promise<EvaluateResult>;
 }
