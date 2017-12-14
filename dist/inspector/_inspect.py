@@ -47,6 +47,7 @@ def create_specification_for_js(paths):
     except AttributeError as e:
       specs.append(_create_error_spec(e))
     except BaseException as e:  # pylint: disable=broad-except
+      display(e)
       specs.append(_create_error_spec(e))
 
   return IPython.display.JSON(specs)
@@ -58,9 +59,6 @@ def _create_error_spec(exception):
       'spec_type': 'error',
       'error': str(exception),
   }
-
-def foo():
-  pass
 
 def create_specification(path, namespace):
   target = eval(path, namespace)  # pylint: disable=eval-used
