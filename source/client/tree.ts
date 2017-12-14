@@ -103,4 +103,4 @@ export class TreeItem<T> extends HTMLElement {
   }
 }
 
-// document.registerElement('inspect-tree-item', TreeItem);
+document.registerElement('inspect-tree-item', TreeItem);
