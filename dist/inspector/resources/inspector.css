@@ -8,6 +8,12 @@ inspect-tree-item .title {
   font-style: italic;
 }
 
+inspect-tree-item .title-row {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 inspect-tree-item .toggle {
   width: 0;
   height: 0;

@@ -41,6 +41,7 @@ export class TreeItem<T> extends HTMLElement {
 
   attachedCallback() {
     const titleRow = document.createElement('div');
+    titleRow.classList.add('title-row');
     this.appendChild(titleRow);
 
     titleRow.appendChild(this.createIndentSpacer_());
