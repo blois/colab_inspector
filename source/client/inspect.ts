@@ -11,7 +11,6 @@ export async function inspect(path: string) {
 
   const tree = TreeItem.create(spec, new SpecItemConverter());
   (document.querySelector('#output-area') as Element).appendChild(tree);
-  // window.resizeOutput();
 }
 
 class SpecItemConverter extends TreeItemConverter<Spec> {

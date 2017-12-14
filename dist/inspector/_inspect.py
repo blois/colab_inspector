@@ -5,7 +5,6 @@ import IPython
 import google.colab.output
 from google.colab.output import _js
 import uuid
-import traceback
 
 _root = {}
 
@@ -48,8 +47,6 @@ def create_specification_for_js(paths):
     except AttributeError as e:
       specs.append(_create_error_spec(e))
     except BaseException as e:  # pylint: disable=broad-except
-      display(e)
-      traceback.print_exc()
       specs.append(_create_error_spec(e))
 
   return IPython.display.JSON(specs)
