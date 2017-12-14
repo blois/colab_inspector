@@ -1,4 +1,4 @@
-from inspector.inspect import inspect
+from inspector._inspect import inspect
 
 __all__ = ['inspect']
 
