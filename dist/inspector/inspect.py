@@ -50,7 +50,7 @@ def create_specification_for_js(paths):
     except BaseException as e:  # pylint: disable=broad-except
       specs.append(_create_error_spec(e))
 
-  return display.JSON(json.dumps(specs))
+  return IPython.display.JSON(json.dumps(specs))
 
 
 def _create_error_spec(exception):
