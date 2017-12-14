@@ -1,4 +1,12 @@
-import {DictSpecJson, FunctionSpecJson, InstanceSpecJson, ListSpecJson, PrimitiveSpecJson, SpecJson, SpecType} from './specs_json';
+import {
+  DictSpecJson,
+  FunctionSpecJson,
+  InstanceSpecJson,
+  ListSpecJson,
+  PrimitiveSpecJson,
+  ErrorSpecJson,
+  SpecJson,
+  SpecType} from './specs_json';
 
 function createSpan(text: string, classes: string[] = []): HTMLSpanElement {
   const span = document.createElement('span');
@@ -67,6 +75,8 @@ export class Spec {
         return new DictSpec(path, json as DictSpecJson);
       case 'primitive':
         return new PrimitiveSpec(path, json as PrimitiveSpecJson);
+      case 'error':
+        return new ErrorSpec(path, json as ErrorSpecJson);
       default:
         return new Spec(path, json);
     }
@@ -278,6 +288,24 @@ class PrimitiveSpec extends Spec {
     if (this.primitiveJson.type === 'str') {
       element.appendChild(createSpan(`"`, ['type-str']));
     }
+    return element;
+  }
+}
+
+class ErrorSpec extends Spec {
+  errorJson: ErrorSpecJson;
+
+  constructor(path: Path, json: ErrorSpecJson) {
+    super(path, json);
+
+    this.errorJson = json;
+  }
+
+  createHeader(): HTMLElement {
+    const key = this.path.key;
+    const element = createSpan(``);
+    element.appendChild(createSpan(`${this.path.key.name}: `));
+    element.appendChild(createSpan(`${this.type} - ${this.errorJson.error}`, []));
     return element;
   }
 }

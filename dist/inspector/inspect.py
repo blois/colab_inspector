@@ -23,7 +23,6 @@ def inspect(target):
 
   display(IPython.display.HTML('''
     <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
-    <div>done?</div>
     <script src='/nbextensions/google.colab.labs.inspector/inspector.bundle.js'></script>
     <script>
       inspect('{id}');
