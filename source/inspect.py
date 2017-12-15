@@ -4,6 +4,7 @@ import json
 import IPython
 import google.colab.output
 import uuid
+import inspect
 
 _root = {}
 
@@ -204,7 +205,7 @@ def _fill_function_spec(item, spec):
     spec: the specification to be populated.
   """
   spec['arguments'] = list(item.__code__.co_varnames)
-  spec['docs'] = item.__doc__
+  spec['docs'] = inspect.getdoc(item)
 
 
 def _fill_dict_spec(item, spec):
