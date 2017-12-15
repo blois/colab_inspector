@@ -90,6 +90,8 @@ def _create_spec_for(item):
   spec_type = item_type
   if item_type == 'list':
     _fill_list_spec(item, spec)
+  elif item_type == 'tuple':
+    _fill_tuple_spec(item, spec)
   elif item_type == 'dict':
     _fill_dict_spec(item, spec)
   elif item_type == 'instancemethod':
@@ -118,22 +120,6 @@ def _fill_primitive_spec(item, spec):
   spec['string'] = str(item)
 
 
-def _fill_list_spec(item, spec):
-  """Populates the type specification for a list type.
-
-  Args:
-    item: the list to be inspected.
-    spec: the specification to be populated.
-  """
-  spec['length'] = len(item)
-  length = min(10, len(item))
-  items = []
-  for i in range(length):
-    items.append(_create_spec_for(item[i]))
-
-  spec['items'] = items
-
-
 def _fill_instance_spec(item, spec):
   """Populates the type specification for an item type.
 
@@ -155,6 +141,42 @@ def _fill_function_spec(item, spec):
   """
   spec['arguments'] = list(item.__code__.co_varnames)
   spec['docs'] = item.__doc__
+
+
+def _fill_list_spec(item, spec):
+  """Populates the type specification for a list type.
+
+  Args:
+    item: the list to be inspected.
+    spec: the specification to be populated.
+  """
+  _fill_list_or_tuple_spec(item, spec)
+
+
+def _fill_tuple_spec(item, spec):
+  """Populates the type specification for a tuple type.
+
+  Args:
+    item: the tuple to be inspected.
+    spec: the specification to be populated.
+  """
+  _fill_list_or_tuple_spec(item, spec)
+
+
+def _fill_list_or_tuple_spec(item, spec):
+  """Populates the type specification for a list or tuple type.
+
+  Args:
+    item: the list to be inspected.
+    spec: the specification to be populated.
+  """
+  spec['length'] = len(item)
+  length = min(10, len(item))
+  items = []
+  for i in range(length):
+    items.append(_create_spec_for(item[i]))
+
+  spec['items'] = items
 
 
 def _fill_dict_spec(item, spec):

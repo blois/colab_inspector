@@ -1,5 +1,5 @@
 import {Path, Spec} from './specs';
-import {SpecJson} from './specs_json';
+import * as wire from './specs_json';
 
 export async function getSpecs(paths: Path[]): Promise<Spec[]> {
   const rawPaths = paths.map((path) => path.toString());
@@ -11,6 +11,6 @@ export async function getSpecs(paths: Path[]): Promise<Spec[]> {
   }
 
   const data = result.data;
-  const specJson = data['application/json'] as SpecJson[];
+  const specJson = data['application/json'] as wire.Spec[];
   return specJson.map((json, index) => Spec.create(paths[index], json));
 }

@@ -1,38 +1,44 @@
 export type SpecType = 'list'|'module'|'instance'|'method'|'classobj'|'str'|
-    'dict'|'function'|'unknown'|'primitive'|'error';
+    'dict'|'function'|'unknown'|'primitive'|'error'|'tuple';
 
-export declare interface AbbreviatedSpecJson {
+export declare interface AbbreviatedSpec {
   type: SpecType;
   description: string;
 }
 
-export declare interface SpecJson {
+export declare interface Spec {
   type: string;
   spec_type: SpecType;
 }
 
-export declare interface ListSpecJson extends SpecJson {
+export declare interface SequenceSpec extends Spec {
   length: number;
-  items: SpecJson[];
+  items: Spec[];
 }
 
-export declare interface InstanceSpecJson extends SpecJson {
+export declare interface ListSpec extends SequenceSpec {
+}
+
+export declare interface TupleSpec extends SequenceSpec {
+}
+
+export declare interface InstanceSpec extends Spec {
   length: number;
   keys: string[];
 }
 
-export declare interface FunctionSpecJson extends SpecJson {
+export declare interface FunctionSpec extends Spec {
   arguments: string[];
   docs: string;
 }
 
-export declare interface DictSpecJson extends SpecJson {
+export declare interface DictSpec extends Spec {
   length: number;
-  contents: {[key: string]: AbbreviatedSpecJson};
+  contents: {[key: string]: AbbreviatedSpec};
 }
 
-export declare interface ErrorSpecJson extends SpecJson {
+export declare interface ErrorSpec extends Spec {
   error: string;
 }
 
-export declare interface PrimitiveSpecJson extends SpecJson { string: string; }
+export declare interface PrimitiveSpec extends Spec { string: string; }

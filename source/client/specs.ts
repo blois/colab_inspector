@@ -1,12 +1,4 @@
-import {
-  DictSpecJson,
-  FunctionSpecJson,
-  InstanceSpecJson,
-  ListSpecJson,
-  PrimitiveSpecJson,
-  ErrorSpecJson,
-  SpecJson,
-  SpecType} from './specs_json';
+import * as wire from './specs_json';
 
 function createSpan(text: string, classes: string[] = []): HTMLSpanElement {
   const span = document.createElement('span');
@@ -60,29 +52,31 @@ export class Path {
 }
 
 export class Spec {
-  constructor(readonly path: Path, private readonly json: SpecJson) {}
+  constructor(readonly path: Path, private readonly json: wire.Spec) {}
 
-  static create(path: Path, json: SpecJson) {
+  static create(path: Path, json: wire.Spec) {
     switch (json.spec_type) {
       case 'list':
-        return new ListSpec(path, json as ListSpecJson);
+        return new ListSpec(path, json as wire.ListSpec);
+      case 'tuple':
+        return new TupleSpec(path, json as wire.TupleSpec);
       case 'module':
       case 'instance':
-        return new InstanceSpec(path, json as InstanceSpecJson);
+        return new InstanceSpec(path, json as wire.InstanceSpec);
       case 'function':
-        return new FunctionSpec(path, json as FunctionSpecJson);
+        return new FunctionSpec(path, json as wire.FunctionSpec);
       case 'dict':
-        return new DictSpec(path, json as DictSpecJson);
+        return new DictSpec(path, json as wire.DictSpec);
       case 'primitive':
-        return new PrimitiveSpec(path, json as PrimitiveSpecJson);
+        return new PrimitiveSpec(path, json as wire.PrimitiveSpec);
       case 'error':
-        return new ErrorSpec(path, json as ErrorSpecJson);
+        return new ErrorSpec(path, json as wire.ErrorSpec);
       default:
         return new Spec(path, json);
     }
   }
 
-  get type(): SpecType {
+  get type(): wire.SpecType {
     return this.json.spec_type;
   }
 
@@ -107,28 +101,28 @@ export class Spec {
   }
 }
 
-class ListSpec extends Spec {
-  listJson: ListSpecJson;
+abstract class SequenceSpec extends Spec {
+  sequence: wire.SequenceSpec;
 
-  constructor(path: Path, json: ListSpecJson) {
+  constructor(path: Path, json: wire.SequenceSpec) {
     super(path, json);
 
-    this.listJson = json;
+    this.sequence = json;
   }
 
   get length(): number {
-    return this.listJson.length;
+    return this.sequence.length;
   }
 
   hasItems(): boolean {
-    return !!this.listJson.length;
+    return !!this.sequence.length;
   }
 
   createHeader(): HTMLElement {
     const element = createSpan('', []);
     element.appendChild(
-        createSpan(`${this.path.key.name} (${this.length}) [`, []));
-    const items = [...this.listJson.items];
+        createSpan(`${this.path.key.name} (${this.length}) ${this.openBracket}`, []));
+    const items = [...this.sequence.items];
     items.length = Math.min(items.length, 10);
 
     const specs = items.map((item, index) => {
@@ -144,31 +138,68 @@ class ListSpec extends Spec {
       }
     });
 
-    if (this.listJson.length > specs.length) {
+    if (this.sequence.length > specs.length) {
       element.appendChild(createSpan(', \u2026'));
     }
 
-    element.appendChild(createSpan(`]`, []));
+    element.appendChild(createSpan(this.closeBracket, []));
     return element;
   }
 
   getChildPaths(): Path[] {
-    const length = Math.min(this.listJson.length, 100);
+    const length = Math.min(this.sequence.length, 100);
     const paths = [];
     for (let i = 0; i < length; ++i) {
       paths.push(this.path.create(new Key(String(i), AccessorType.INDEXER)));
     }
     return paths;
   }
+
+  abstract get openBracket(): string;
+  abstract get closeBracket(): string;
+}
+
+class ListSpec extends SequenceSpec {
+  list: wire.ListSpec;
+
+  constructor(path: Path, json: wire.ListSpec) {
+    super(path, json);
+
+    this.list = json;
+  }
+
+  get openBracket(): string {
+    return '[';
+  }
+  get closeBracket(): string {
+    return ']';
+  }
+}
+
+class TupleSpec extends SequenceSpec {
+  tuple: wire.TupleSpec;
+
+  constructor(path: Path, json: wire.TupleSpec) {
+    super(path, json);
+
+    this.tuple = json;
+  }
+
+  get openBracket(): string {
+    return '(';
+  }
+  get closeBracket(): string {
+    return ')';
+  }
 }
 
 class InstanceSpec extends Spec {
-  instanceJson: InstanceSpecJson;
+  instance: wire.InstanceSpec;
 
-  constructor(path: Path, json: InstanceSpecJson) {
+  constructor(path: Path, json: wire.InstanceSpec) {
     super(path, json);
 
-    this.instanceJson = json;
+    this.instance = json;
   }
 
   createHeader(): HTMLElement {
@@ -176,36 +207,36 @@ class InstanceSpec extends Spec {
     const element = createSpan(``);
     element.appendChild(createSpan(`${this.path.key.name}`));
     element.appendChild(createSpan(`: `));
-    element.appendChild(createSpan(`${this.instanceJson.type}`));
+    element.appendChild(createSpan(`${this.instance.type}`));
     return element;
   }
 
   hasItems(): boolean {
-    return !!this.instanceJson.length;
+    return !!this.instance.length;
   }
 
   getChildPaths(): Path[] {
-    return this.instanceJson.keys.sort(comparePythonIdentifiers)
+    return this.instance.keys.sort(comparePythonIdentifiers)
         .map((key) => this.path.create(new Key(key, AccessorType.IDENTIFIER)));
   }
 }
 
 class FunctionSpec extends Spec {
-  functionJson: FunctionSpecJson;
+  fn: wire.FunctionSpec;
 
-  constructor(path: Path, json: FunctionSpecJson) {
+  constructor(path: Path, json: wire.FunctionSpec) {
     super(path, json);
 
-    this.functionJson = json;
+    this.fn = json;
   }
 
   createHeader(): HTMLElement {
     const key = this.path.key;
     const element = createSpan(``, []);
-    element.title = this.functionJson.docs;
+    element.title = this.fn.docs;
     element.appendChild(createSpan(`${this.path.key.name}(`, []));
 
-    const args = this.functionJson.arguments;
+    const args = this.fn.arguments;
 
     args.forEach((arg, index) => {
       element.appendChild(createSpan(arg, ['argument']));
@@ -219,12 +250,12 @@ class FunctionSpec extends Spec {
 }
 
 class DictSpec extends Spec {
-  dictJson: DictSpecJson;
+  dict: wire.DictSpec;
 
-  constructor(path: Path, json: DictSpecJson) {
+  constructor(path: Path, json: wire.DictSpec) {
     super(path, json);
 
-    this.dictJson = json;
+    this.dict = json;
   }
 
   createHeader(): HTMLElement {
@@ -248,19 +279,19 @@ class DictSpec extends Spec {
   }
 
   get keys(): Key[] {
-    return Object.keys(this.dictJson.contents)
+    return Object.keys(this.dict.contents)
         .sort(comparePythonIdentifiers)
         .map((identifier) => new Key(identifier, AccessorType.INDEXER));
   }
 }
 
 class PrimitiveSpec extends Spec {
-  primitiveJson: PrimitiveSpecJson;
+  primitive: wire.PrimitiveSpec;
 
-  constructor(path: Path, json: PrimitiveSpecJson) {
+  constructor(path: Path, json: wire.PrimitiveSpec) {
     super(path, json);
 
-    this.primitiveJson = json;
+    this.primitive = json;
   }
 
   createHeader(): HTMLElement {
@@ -277,15 +308,15 @@ class PrimitiveSpec extends Spec {
 
   asElement(length: number): HTMLElement {
     const element = createSpan(``);
-    if (this.primitiveJson.type === 'str') {
+    if (this.primitive.type === 'str') {
       element.appendChild(createSpan(`"`, ['type-str']));
     }
-    let str = this.primitiveJson.string;
+    let str = this.primitive.string;
     if (str.length > length) {
       str = str.substr(0, length) + '\u2026';
     }
-    element.appendChild(createSpan(str, [`type-${this.primitiveJson.type}`]));
-    if (this.primitiveJson.type === 'str') {
+    element.appendChild(createSpan(str, [`type-${this.primitive.type}`]));
+    if (this.primitive.type === 'str') {
       element.appendChild(createSpan(`"`, ['type-str']));
     }
     return element;
@@ -293,19 +324,19 @@ class PrimitiveSpec extends Spec {
 }
 
 class ErrorSpec extends Spec {
-  errorJson: ErrorSpecJson;
+  error: wire.ErrorSpec;
 
-  constructor(path: Path, json: ErrorSpecJson) {
+  constructor(path: Path, json: wire.ErrorSpec) {
     super(path, json);
 
-    this.errorJson = json;
+    this.error = json;
   }
 
   createHeader(): HTMLElement {
     const key = this.path.key;
     const element = createSpan(``);
     element.appendChild(createSpan(`${this.path.key.name}: `));
-    element.appendChild(createSpan(`${this.type} - ${this.errorJson.error}`, []));
+    element.appendChild(createSpan(`${this.type} - ${this.error.error}`, []));
     return element;
   }
 }
