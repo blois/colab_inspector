@@ -3,80 +3,31 @@
 import json
 import IPython
 import google.colab.output
+from google.colab.output import _js
 import uuid
-import inspect
 
 _root = {}
 
-def inspect(target, uncompiled=False):
+def inspect(target):
   """Displays an interactive inspector for the given object.
 
   Args:
     target: the object to be inspected.
-    uncompiled: True if the uncompiled Javascript mode should be used.
   """
 
-  message.RegisterCallback('inspect.create_specification_for_js',
+  _js.register_callback('inspect.create_specification_for_js',
                            create_specification_for_js)
 
-  if uncompiled:
-    script = '<script src="https://localhost:5432/_/ts_scripts.js"></script>'
-  else:
-    script = '<script>%s</script>' % (
-        resources.GetResource(_INSPECT_SRC_PATH) + '//# sourceURL=inspect.js')
-
-  object_id = 'id_%s' % str(uuid.uuid4())
+  object_id = 'id_%s' % str(uuid.uuid4()).replace('-', '_')
   _root[object_id] = target
 
-  display(IPython.display.HTML("""
-  <style>
-    inspect-tree-item {
-      display: flow-root;
-      font-family: monospace;
-      font-size: 13px;
-    }
-
-    inspect-tree-item .title {
-      font-style: italic;
-    }
-
-    inspect-tree-item .toggle {
-      width: 0;
-      height: 0;
-      border-style: solid;
-      border-width: 4px 0 4px 8px;
-      border-color: transparent transparent transparent #6E6E6E;
-      display: inline-block;
-      margin-right: 4px;
-    }
-
-    inspect-tree-item.expanded>div>.toggle {
-      transform: rotate(90deg);
-    }
-
-    inspect-tree-item .toggle.empty {
-      visibility: hidden;
-    }
-
-    .argument {
-      color: #92279A;
-    }
-
-    .type-int, .type-bool, .type-NoneType {
-      color: #3219D3;
-    }
-    .type-str {
-      color: #CB3835;
-    }
-  </style>
-  %(script)s
-  <script>
-    inspect("%(id)s");
-  </script>
-  """ % {
-      'script': script,
-      'id': object_id,
-  }))
+  display(IPython.display.HTML('''
+    <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
+    <script src='/nbextensions/google.colab.labs.inspector/inspector.bundle.js'></script>
+    <script>
+      inspect('{id}');
+    </script>
+  '''.format(id=object_id)))
 
 
 def create_specification_for_js(paths):
@@ -88,7 +39,6 @@ def create_specification_for_js(paths):
   Returns:
     The JSON display object to be returned to JS.
   """
-
   specs = []
   for path in paths:
     try:
@@ -98,7 +48,7 @@ def create_specification_for_js(paths):
     except BaseException as e:  # pylint: disable=broad-except
       specs.append(_create_error_spec(e))
 
-  return display.JSON(json.dumps(specs))
+  return IPython.display.JSON(specs)
 
 
 def _create_error_spec(exception):
@@ -107,7 +57,6 @@ def _create_error_spec(exception):
       'spec_type': 'error',
       'error': str(exception),
   }
-
 
 def create_specification(path, namespace):
   target = eval(path, namespace)  # pylint: disable=eval-used
@@ -141,6 +90,8 @@ def _create_spec_for(item):
   spec_type = item_type
   if item_type == 'list':
     _fill_list_spec(item, spec)
+  elif item_type == 'tuple':
+    _fill_tuple_spec(item, spec)
   elif item_type == 'dict':
     _fill_dict_spec(item, spec)
   elif item_type == 'instancemethod':
@@ -169,22 +120,6 @@ def _fill_primitive_spec(item, spec):
   spec['string'] = str(item)
 
 
-def _fill_list_spec(item, spec):
-  """Populates the type specification for a list type.
-
-  Args:
-    item: the list to be inspected.
-    spec: the specification to be populated.
-  """
-  spec['length'] = len(item)
-  length = min(10, len(item))
-  items = []
-  for i in range(length):
-    items.append(_create_spec_for(item[i]))
-
-  spec['items'] = items
-
-
 def _fill_instance_spec(item, spec):
   """Populates the type specification for an item type.
 
@@ -205,7 +140,43 @@ def _fill_function_spec(item, spec):
     spec: the specification to be populated.
   """
   spec['arguments'] = list(item.__code__.co_varnames)
-  spec['docs'] = inspect.getdoc(item)
+  spec['docs'] = item.__doc__
+
+
+def _fill_list_spec(item, spec):
+  """Populates the type specification for a list type.
+
+  Args:
+    item: the list to be inspected.
+    spec: the specification to be populated.
+  """
+  _fill_list_or_tuple_spec(item, spec)
+
+
+def _fill_tuple_spec(item, spec):
+  """Populates the type specification for a tuple type.
+
+  Args:
+    item: the tuple to be inspected.
+    spec: the specification to be populated.
+  """
+  _fill_list_or_tuple_spec(item, spec)
+
+
+def _fill_list_or_tuple_spec(item, spec):
+  """Populates the type specification for a list or tuple type.
+
+  Args:
+    item: the list to be inspected.
+    spec: the specification to be populated.
+  """
+  spec['length'] = len(item)
+  length = min(10, len(item))
+  items = []
+  for i in range(length):
+    items.append(_create_spec_for(item[i]))
+
+  spec['items'] = items
 
 
 def _fill_dict_spec(item, spec):

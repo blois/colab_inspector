@@ -2,3 +2,6 @@
 
 node_modules
 .DS_Store
+.tox
+.pytest_cache
+google_colab_inspector.egg-info
