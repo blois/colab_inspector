@@ -1,3 +1,5 @@
+import os
+
 from setuptools import find_packages
 from setuptools import setup
 
@@ -30,4 +32,11 @@ setup(
             'resources/inspector.css',
         ],
     },
+    install_requires=[],
+    extras_require={
+        "tests": [
+            "pytest",
+            "six",
+        ],
+    }
 )
