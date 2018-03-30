@@ -1,6 +1,6 @@
-from inspector._inspect import inspect
+from inspector._inspect import inspect, watch_globals
 
-__all__ = ['inspect']
+__all__ = ['inspect', 'watch_globals']
 
 def _jupyter_nbextension_paths():
   # See:
