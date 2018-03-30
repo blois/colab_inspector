@@ -12,5 +12,6 @@ export async function getSpecs(paths: Path[]): Promise<Spec[]> {
 
   const data = result.data;
   const specJson = data['application/json'] as wire.Spec[];
+  // (window as any)['specJson'] = specJson;
   return specJson.map((json, index) => Spec.create(paths[index], json));
 }

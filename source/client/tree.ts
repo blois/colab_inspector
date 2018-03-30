@@ -24,7 +24,9 @@ export class TreeItem<T> extends HTMLElement {
   dataConverter: TreeItemConverter<T>;
   indent = 0;
   expanded_ = false;
+  showHeader = true;
   itemsContainer_: Element;
+  private fetching_ = false;
 
   static is = 'inspect-tree-item';
 
@@ -37,22 +39,26 @@ export class TreeItem<T> extends HTMLElement {
 
   createdCallback() {
     this.indent = 0;
+    this.showHeader = true;
+    this.fetching_ = false;
   }
 
   attachedCallback() {
-    const titleRow = document.createElement('div');
-    titleRow.classList.add('title-row');
-    this.appendChild(titleRow);
-
-    titleRow.appendChild(this.createIndentSpacer_());
-
     const toggle = document.createElement('div');
-    toggle.className = 'toggle';
-    titleRow.appendChild(toggle);
+    const titleRow = document.createElement('div');
+    if (this.showHeader) {
+      titleRow.classList.add('title-row');
+      this.appendChild(titleRow);
 
-    const title = this.dataConverter.createHeader(this.data);
-    title.classList.add('title');
-    titleRow.appendChild(title);
+      titleRow.appendChild(this.createIndentSpacer_());
+
+      toggle.className = 'toggle';
+      titleRow.appendChild(toggle);
+
+      const title = this.dataConverter.createHeader(this.data);
+      title.classList.add('title');
+      titleRow.appendChild(title);
+    }
 
     if (!this.dataConverter.hasItems(this.data)) {
       toggle.classList.add('empty');
@@ -64,16 +70,19 @@ export class TreeItem<T> extends HTMLElement {
         this.toggleExpansion_();
       });
     }
+    if (!this.showHeader) {
+      this.toggleExpansion_();
+    }
   }
 
-  createIndentSpacer_() {
+  private createIndentSpacer_() {
     const spacer = document.createElement('spacer');
     spacer.style.display = 'inline-block';
     spacer.style.width = `${this.indent * 20}px`;
     return spacer;
   }
 
-  toggleExpansion_() {
+  private toggleExpansion_() {
     this.expanded_ = !this.expanded_;
 
     if (this.expanded_) {
@@ -85,14 +94,21 @@ export class TreeItem<T> extends HTMLElement {
 
   async expand() {
     this.classList.add('expanded');
+    this.fetching_ = true;
     const children = await this.dataConverter.getChildItems(this.data);
+    this.fetching_ = false;
+    this.populateChildren(children);
+  }
+
+  private populateChildren(children: T[]) {
     for (const child of children) {
       const item = TreeItem.create(child, this.dataConverter);
-      item.indent = this.indent + 1;
+      if (this.showHeader) {
+        item.indent = this.indent + 1;
+      }
       item.dataConverter = this.dataConverter;
       this.itemsContainer_.appendChild(item);
     }
-    // window.resizeOutput();
   }
 
   collapse() {
@@ -100,7 +116,19 @@ export class TreeItem<T> extends HTMLElement {
       this.itemsContainer_.lastElementChild.remove();
     }
     this.classList.remove('expanded');
-    // window.resizeOutput();
+  }
+
+  async refresh(data: T) {
+    if (this.fetching_) {
+      return;
+    }
+    this.data = data;
+    if (this.expanded_) {
+      const children = await this.dataConverter.getChildItems(this.data);
+      this.collapse();
+      this.classList.add('expanded');
+      this.populateChildren(children);
+    }
   }
 }
 

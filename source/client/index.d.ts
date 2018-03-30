@@ -1,7 +1,7 @@
 declare interface EvaluateResult {
   data: EvaluateData;
-  ename: string;
-  evalue: string;
+  ename?: string;
+  evalue?: string;
   status: string;
 }
 

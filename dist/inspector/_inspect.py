@@ -25,9 +25,9 @@ def inspect(target):
     <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
     <script src='/nbextensions/google.colab.labs.inspector/inspector.bundle.js'></script>
     <script>
-      inspect('{id}');
+      inspectSpec('{id}', {spec}, false);
     </script>
-  '''.format(id=object_id)))
+  '''.format(id=object_id, spec=_create_spec_for(target))))
 
 
 def create_specification_for_js(paths):

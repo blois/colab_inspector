@@ -12,6 +12,7 @@ setup(
     long_description='Inspector for Google Colaboratory.',
     url='https://github.com/blois/colab_inspector',
     packages=find_packages(where='source', exclude=('tests*',)),
+    package_dir={'': 'source'},
     license='Apache 2.0',
     keywords='google colab ipython jupyter',
     classifiers=(
@@ -32,7 +33,14 @@ setup(
             'resources/inspector.css',
         ],
     },
-    install_requires=[],
+    install_requires=[
+        'ipykernel',
+        'google-auth',
+        'google-cloud-bigquery',
+        'portpicker',
+        'requests',
+        'six',
+    ],
     extras_require={
         "tests": [
             "pytest",

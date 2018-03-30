@@ -26,6 +26,7 @@
     "karma-webpack": "^2.0.6",
     "mocha": "^4.0.1",
     "source-map-loader": "^0.2.3",
+    "ts-sinon": "^1.0.12",
     "tslint": "^5.7.0",
     "typescript": "^2.6.0",
     "webpack": "^3.10.0"

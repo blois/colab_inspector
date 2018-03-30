@@ -8,6 +8,8 @@ import uuid
 
 _root = {}
 
+_post_execute_hook = None
+
 def inspect(target):
   """Displays an interactive inspector for the given object.
 
@@ -25,10 +27,43 @@ def inspect(target):
     <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
     <script src='/nbextensions/google.colab.labs.inspector/inspector.bundle.js'></script>
     <script>
-      inspect('{id}');
+      inspectSpec('{id}', {spec}, true);
     </script>
-  '''.format(id=object_id)))
+  '''.format(id=object_id, spec=_create_spec_for(target))))
 
+def watch_globals():
+  user_globals = IPython.get_ipython().user_global_ns
+  _root['user_global_ns'] = user_globals
+
+  _js.register_callback('inspect.create_specification_for_js',
+                           create_specification_for_js)
+  display(IPython.display.HTML('''
+    <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
+    <script src='/nbextensions/google.colab.labs.inspector/inspector.bundle.js'></script>
+    <script>
+      inspectSpec('user_global_ns', {spec}, false);
+    </script>
+  '''.format(spec=_create_spec_for(user_globals, include_private=False, filter_global_ns=True))))
+
+  global _post_execute_hook
+  if not _post_execute_hook:
+    _post_execute_hook = _refresh_watchers
+    IPython.get_ipython().events.register('post_run_cell', _post_execute_hook)
+
+def _refresh_watchers():
+  display(IPython.display.HTML('''<script>
+    (() => {
+      const frames = window.parent.frames;
+      for (let i = 0; i < frames.length; ++i) {
+        try {
+          const frame = frames[i];
+          if (frame.window.refreshInspector) {
+              frame.window.refreshInspector('user_global_ns');
+          }
+        } catch(e) {}
+      }
+    })();
+    </script>'''))
 
 def create_specification_for_js(paths):
   """Creates a type specification for JS consumption.
@@ -58,10 +93,14 @@ def _create_error_spec(exception):
       'error': str(exception),
   }
 
+_GLOBALS = [
+  'user_global_ns',
+]
+
 def create_specification(path, namespace):
   target = eval(path, namespace)  # pylint: disable=eval-used
-
-  return _create_spec_for(target)
+  is_global_ns = path in _GLOBALS
+  return _create_spec_for(target, include_private=(not is_global_ns), filter_global_ns=is_global_ns)
 
 
 _PRIMITIVE_TYPES = [
@@ -72,7 +111,7 @@ _PRIMITIVE_TYPES = [
 ]
 
 
-def _create_spec_for(item):
+def _create_spec_for(item, include_private=True, filter_global_ns=False):
   """Creates a type specification for an arbitrary Python object.
 
   Args:
@@ -87,26 +126,23 @@ def _create_spec_for(item):
       'type': item_type,
   }
 
-  spec_type = item_type
+  spec['spec_type'] = item_type
   if item_type == 'list':
     _fill_list_spec(item, spec)
   elif item_type == 'tuple':
     _fill_tuple_spec(item, spec)
   elif item_type == 'dict':
-    _fill_dict_spec(item, spec)
+    _fill_dict_spec(item, spec, include_private=include_private, filter_global_ns=filter_global_ns)
   elif item_type == 'instancemethod':
     spec_type = 'function'
     _fill_function_spec(item, spec)
   elif item_type == 'function':
     _fill_function_spec(item, spec)
   elif item_type in _PRIMITIVE_TYPES:
-    spec_type = 'primitive'
     _fill_primitive_spec(item, spec)
   else:
     spec_type = 'instance'
     _fill_instance_spec(item, spec)
-
-  spec['spec_type'] = spec_type
 
   return spec
 
@@ -117,6 +153,7 @@ def _get_item_type(item):
 
 
 def _fill_primitive_spec(item, spec):
+  spec['spec_type'] = 'primitive'
   spec['string'] = str(item)
 
 
@@ -174,24 +211,40 @@ def _fill_list_or_tuple_spec(item, spec):
   length = min(10, len(item))
   items = []
   for i in range(length):
-    items.append(_create_spec_for(item[i]))
+    items.append(_create_abbreviated_spec(item[i]))
 
   spec['items'] = items
 
+_FILTERED_GLOBAL_NS_ENTRIES = [
+  'In',
+  'Out',
+]
 
-def _fill_dict_spec(item, spec):
+def _fill_dict_spec(item, spec, include_private=True, filter_global_ns=False):
   keys = item.keys()
+  if not include_private:
+    keys = [k for k in keys if not k.startswith('_')]
+  if filter_global_ns:
+    keys = [k for k in keys if not k in _FILTERED_GLOBAL_NS_ENTRIES]
+
   contents = {}
   for key in keys:
-    contents[key] = _create_abbreviated_spec(str(key), item[key])
+    contents[key] = _create_abbreviated_spec(item[key])
   spec['contents'] = contents
   spec['length'] = len(keys)
 
 
-def _create_abbreviated_spec(key, item):
+def _create_abbreviated_spec(item):
   item_type = _get_item_type(item)
-  description = key
-  if item_type == 'int' or item_type == 'str':
-    description = str(item)
-  spec = {'type': item_type, 'description': description}
+  spec = {'type': item_type, 'spec_type': 'abbreviated'}
+
+  if item_type in _PRIMITIVE_TYPES:
+    _fill_primitive_spec(item, spec)
+  elif item_type == 'dict':
+    spec['description'] = 'dict({})'.format(len(item.keys()))
+  elif item_type == 'list':
+    spec['description'] = 'list[{}]'.format(len(item))
+  else:
+    spec['description'] = str(item)
+
   return spec

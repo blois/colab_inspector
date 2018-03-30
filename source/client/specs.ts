@@ -12,10 +12,11 @@ function createSpan(text: string, classes: string[] = []): HTMLSpanElement {
 export enum AccessorType {
   IDENTIFIER,
   INDEXER,
+  KEY,
 }
 
 export class Key {
-  constructor(readonly name: string, readonly type: AccessorType) {}
+  constructor(readonly name: string|number, readonly type: AccessorType) {}
 }
 
 export class Path {
@@ -42,6 +43,9 @@ export class Path {
           break;
         case AccessorType.INDEXER:
           path = `${path}[${key.name}]`;
+          break;
+        case AccessorType.KEY:
+          path = `${path}["${key.name}"]`;
           break;
         default:
           throw new Error('Unknown type');
@@ -77,7 +81,7 @@ export class Spec {
   }
 
   get type(): wire.SpecType {
-    return this.json.spec_type;
+    return <wire.SpecType>(this.json.spec_type);
   }
 
   createHeader(): HTMLElement {
@@ -150,7 +154,7 @@ abstract class SequenceSpec extends Spec {
     const length = Math.min(this.sequence.length, 100);
     const paths = [];
     for (let i = 0; i < length; ++i) {
-      paths.push(this.path.create(new Key(String(i), AccessorType.INDEXER)));
+      paths.push(this.path.create(new Key(i, AccessorType.INDEXER)));
     }
     return paths;
   }
@@ -269,7 +273,7 @@ class DictSpec extends Spec {
     keys.length = Math.min(keys.length, 10);
 
     keys.forEach((key, index) => {
-      element.appendChild(createSpan(key.name, []));
+      element.appendChild(createSpan(String(key.name), []));
       if (index < keys.length - 1) {
         element.appendChild(createSpan(', '));
       }
@@ -278,10 +282,18 @@ class DictSpec extends Spec {
     return element;
   }
 
+  hasItems(): boolean {
+    return !!Object.keys(this.dict.contents).length;
+  }
+
   get keys(): Key[] {
     return Object.keys(this.dict.contents)
         .sort(comparePythonIdentifiers)
-        .map((identifier) => new Key(identifier, AccessorType.INDEXER));
+        .map((identifier) => new Key(identifier, AccessorType.KEY));
+  }
+
+  getChildPaths(): Path[] {
+    return this.keys.map((key) => this.path.create(key));
   }
 }
 

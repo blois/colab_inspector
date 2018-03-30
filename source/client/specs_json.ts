@@ -1,14 +1,15 @@
-export type SpecType = 'list'|'module'|'instance'|'method'|'classobj'|'str'|
-    'dict'|'function'|'unknown'|'primitive'|'error'|'tuple';
+export type SpecType = 'abbreviated'|'list'|'module'|'instance'|'method'|
+    'classobj'|'str'|'dict'|'function'|'unknown'|'primitive'|'error'|'tuple';
 
-export declare interface AbbreviatedSpec {
-  type: SpecType;
-  description: string;
-}
+
 
 export declare interface Spec {
   type: string;
-  spec_type: SpecType;
+  spec_type: string;
+}
+
+export declare interface AbbreviatedSpec extends Spec {
+  description: string;
 }
 
 export declare interface SequenceSpec extends Spec {
@@ -34,7 +35,7 @@ export declare interface FunctionSpec extends Spec {
 
 export declare interface DictSpec extends Spec {
   length: number;
-  contents: {[key: string]: AbbreviatedSpec};
+  contents: {[key: string]: AbbreviatedSpec|PrimitiveSpec};
 }
 
 export declare interface ErrorSpec extends Spec {
