@@ -8,6 +8,7 @@ import pytest
 import json
 import unittest
 import inspector._inspect as inspector
+import numpy as np
 
 
 class InspectorLoadsTest(unittest.TestCase):
@@ -37,5 +38,27 @@ class InspectorLoadsTest(unittest.TestCase):
     assert spec['spec_type'] == 'dict'
 
     x = spec['contents']['x']
-    assert x['spec_type'] == 'abbreviated'
+    assert x['spec_type'] == 'dict'
     assert x['type'] == 'dict'
+    assert x['partial']
+
+  def test_inspect_numpy(self):
+    root = {'np': np}
+    spec = inspector._create_spec_for(root)
+    assert not spec['partial']
+    np_preview = spec['contents']['np']
+
+    assert np_preview['spec_type'] == 'instance'
+    assert np_preview['type'] == 'module'
+    assert np_preview['length'] > 200
+    assert np_preview['partial']
+    assert len(np_preview['contents'].keys()) == 0
+
+    np_spec = inspector._create_spec_for(np)
+    assert np_spec['spec_type'] == 'instance'
+    assert np_spec['type'] == 'module'
+    assert np_spec['length'] > 200
+    assert not np_spec['partial']
+    assert len(np_spec['contents'].keys()) == 100
+
+    # print(json.dumps(np_spec))

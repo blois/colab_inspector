@@ -1,5 +1,5 @@
 import {inspect, inspectSpec, refresh} from './inspect';
-import * as wire from './specs_json';
+import * as wire from './wire';
 
 declare global {
     interface Window {

@@ -15,6 +15,7 @@ export declare interface AbbreviatedSpec extends Spec {
 export declare interface SequenceSpec extends Spec {
   length: number;
   items: Spec[];
+  partial: boolean;
 }
 
 export declare interface ListSpec extends SequenceSpec {
@@ -25,7 +26,8 @@ export declare interface TupleSpec extends SequenceSpec {
 
 export declare interface InstanceSpec extends Spec {
   length: number;
-  keys: string[];
+  contents: {[key: string]: Spec};
+  partial: boolean;
 }
 
 export declare interface FunctionSpec extends Spec {
@@ -35,11 +37,12 @@ export declare interface FunctionSpec extends Spec {
 
 export declare interface DictSpec extends Spec {
   length: number;
-  contents: {[key: string]: AbbreviatedSpec|PrimitiveSpec};
+  contents: {[key: string]: Spec};
+  partial: boolean;
 }
 
 export declare interface ErrorSpec extends Spec {
   error: string;
 }
 
-export declare interface PrimitiveSpec extends Spec { string: string; }
+export declare interface PrimitiveSpec extends Spec { description: string; }

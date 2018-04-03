@@ -1,6 +1,6 @@
 import {TreeItemConverter} from './tree';
 import {Spec} from './specs';
-import {getSpecs} from './service';
+import {getSpec} from './service';
 
 export class SpecItemConverter extends TreeItemConverter<Spec> {
   createHeader(data: Spec): HTMLElement {
@@ -12,7 +12,6 @@ export class SpecItemConverter extends TreeItemConverter<Spec> {
   }
 
   async getChildItems(data: Spec): Promise<Spec[]> {
-    const paths = data.getChildPaths();
-    return getSpecs(paths);
+    return data.getChildSpecs();
   }
 }

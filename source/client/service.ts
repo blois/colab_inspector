@@ -1,17 +1,12 @@
-import {Path, Spec} from './specs';
-import * as wire from './specs_json';
+import {Path} from './path';
+import * as wire from './wire';
 
-export async function getSpecs(paths: Path[]): Promise<Spec[]> {
-  const rawPaths = paths.map((path) => path.toString());
-
+export async function getSpec(path: Path): Promise<wire.Spec> {
   const result = await google.colab.kernel.invokeFunction(
-      'inspect.create_specification_for_js', [rawPaths], {});
+      'inspect.create_specification_for_js', [[path.toString()]], {});
   if (result.status !== 'ok') {
     throw new Error(result.ename);
   }
-
-  const data = result.data;
-  const specJson = data['application/json'] as wire.Spec[];
-  // (window as any)['specJson'] = specJson;
-  return specJson.map((json, index) => Spec.create(paths[index], json));
+  const specJson = result.data['application/json'] as wire.Spec[];
+  return specJson[0];
 }

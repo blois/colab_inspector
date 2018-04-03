@@ -43,7 +43,7 @@ def watch_globals():
     <script>
       inspectSpec('user_global_ns', {spec}, false);
     </script>
-  '''.format(spec=_create_spec_for(user_globals, include_private=False, filter_global_ns=True))))
+  '''.format(spec=json.dumps(_create_spec_for(user_globals, include_private=False, filter_global_ns=True)))))
 
   global _post_execute_hook
   if not _post_execute_hook:
@@ -111,7 +111,7 @@ _PRIMITIVE_TYPES = [
 ]
 
 
-def _create_spec_for(item, include_private=True, filter_global_ns=False):
+def _create_spec_for(item, preload=False, include_private=True, filter_global_ns=False):
   """Creates a type specification for an arbitrary Python object.
 
   Args:
@@ -126,23 +126,20 @@ def _create_spec_for(item, include_private=True, filter_global_ns=False):
       'type': item_type,
   }
 
-  spec['spec_type'] = item_type
   if item_type == 'list':
-    _fill_list_spec(item, spec)
+    _fill_list_spec(item, spec, preload=preload)
   elif item_type == 'tuple':
-    _fill_tuple_spec(item, spec)
+    _fill_tuple_spec(item, spec, preload=preload)
   elif item_type == 'dict':
-    _fill_dict_spec(item, spec, include_private=include_private, filter_global_ns=filter_global_ns)
+    _fill_dict_spec(item, spec, preload=preload, include_private=include_private, filter_global_ns=filter_global_ns)
   elif item_type == 'instancemethod':
-    spec_type = 'function'
     _fill_function_spec(item, spec)
   elif item_type == 'function':
     _fill_function_spec(item, spec)
   elif item_type in _PRIMITIVE_TYPES:
     _fill_primitive_spec(item, spec)
   else:
-    spec_type = 'instance'
-    _fill_instance_spec(item, spec)
+    _fill_instance_spec(item, spec, preload=preload)
 
   return spec
 
@@ -154,20 +151,34 @@ def _get_item_type(item):
 
 def _fill_primitive_spec(item, spec):
   spec['spec_type'] = 'primitive'
-  spec['string'] = str(item)
+  spec['description'] = str(item)
 
 
-def _fill_instance_spec(item, spec):
+def _fill_instance_spec(item, spec, preload=False):
   """Populates the type specification for an item type.
 
   Args:
     item: the item to be inspected.
     spec: the specification to be populated.
   """
+  spec['spec_type'] = 'instance'
   keys = dir(item)
-  spec['keys'] = keys
   spec['length'] = len(keys)
 
+  length = min(0, len(keys)) if preload else min(100, len(keys))
+  keys.sort()
+  keys.reverse()
+  keys = keys[0:length]
+  spec['keys'] = keys
+
+  contents = {}
+  for key in keys:
+    if preload:
+      contents[str(key)] = _create_abbreviated_spec(getattr(item, key))
+    else:
+      contents[str(key)] = _create_spec_for(getattr(item, key), preload=True)
+  spec['contents'] = contents
+  spec['partial'] = preload
 
 def _fill_function_spec(item, spec):
   """Populates the type specification for a function type.
@@ -176,62 +187,77 @@ def _fill_function_spec(item, spec):
     item: the function to be inspected.
     spec: the specification to be populated.
   """
+  spec['spec_type'] = 'function'
   spec['arguments'] = list(item.__code__.co_varnames)
   spec['docs'] = item.__doc__
 
 
-def _fill_list_spec(item, spec):
+def _fill_list_spec(item, spec, preload=False):
   """Populates the type specification for a list type.
 
   Args:
     item: the list to be inspected.
     spec: the specification to be populated.
   """
-  _fill_list_or_tuple_spec(item, spec)
+  _fill_list_or_tuple_spec(item, spec, preload=preload)
 
 
-def _fill_tuple_spec(item, spec):
+def _fill_tuple_spec(item, spec, preload=False):
   """Populates the type specification for a tuple type.
 
   Args:
     item: the tuple to be inspected.
     spec: the specification to be populated.
   """
-  _fill_list_or_tuple_spec(item, spec)
+  _fill_list_or_tuple_spec(item, spec, preload=preload)
 
 
-def _fill_list_or_tuple_spec(item, spec):
+def _fill_list_or_tuple_spec(item, spec, preload=False):
   """Populates the type specification for a list or tuple type.
 
   Args:
     item: the list to be inspected.
     spec: the specification to be populated.
   """
+  spec['spec_type'] = 'list'
   spec['length'] = len(item)
-  length = min(10, len(item))
+  length = min(10, len(item)) if preload else min(100, len(item))
   items = []
   for i in range(length):
     items.append(_create_abbreviated_spec(item[i]))
 
   spec['items'] = items
+  spec['partial'] = preload
 
 _FILTERED_GLOBAL_NS_ENTRIES = [
   'In',
   'Out',
 ]
 
-def _fill_dict_spec(item, spec, include_private=True, filter_global_ns=False):
+def _fill_dict_spec(item, spec, preload=False, include_private=True, filter_global_ns=False):
+  spec['spec_type'] = 'dict'
   keys = item.keys()
   if not include_private:
     keys = [k for k in keys if not k.startswith('_')]
   if filter_global_ns:
     keys = [k for k in keys if not k in _FILTERED_GLOBAL_NS_ENTRIES]
 
+  spec['length'] = len(keys)
+  length = min(10, len(keys)) if preload else min(100, len(keys))
+
+  keys.sort()
+  keys.reverse()
+  keys = keys[0:length]
+
   contents = {}
   for key in keys:
-    contents[key] = _create_abbreviated_spec(item[key])
+    if preload:
+      contents[str(key)] = _create_abbreviated_spec(item[key])
+    else:
+      contents[str(key)] = _create_spec_for(item[key], preload=True)
   spec['contents'] = contents
-  spec['length'] = len(keys)
+  spec['partial'] = preload
+
 
 
 def _create_abbreviated_spec(item):

@@ -1,4 +1,6 @@
-import * as wire from './specs_json';
+import * as wire from './wire';
+import {AccessorType, Key, Path} from './path';
+import * as service from './service';
 
 function createSpan(text: string, classes: string[] = []): HTMLSpanElement {
   const span = document.createElement('span');
@@ -7,52 +9,6 @@ function createSpan(text: string, classes: string[] = []): HTMLSpanElement {
     span.classList.add(cls);
   }
   return span;
-}
-
-export enum AccessorType {
-  IDENTIFIER,
-  INDEXER,
-  KEY,
-}
-
-export class Key {
-  constructor(readonly name: string|number, readonly type: AccessorType) {}
-}
-
-export class Path {
-  constructor(readonly keys: Key[]) {}
-
-  create(key: Key) {
-    return new Path([...this.keys, key]);
-  }
-
-  get key(): Key {
-    return this.keys[this.keys.length - 1];
-  }
-
-  toString(): string {
-    let path = '';
-    for (let i = 0; i < this.keys.length; ++i) {
-      const key = this.keys[i];
-      switch (key.type) {
-        case AccessorType.IDENTIFIER:
-          if (i > 0) {
-            path = path + '.';
-          }
-          path = path + key.name;
-          break;
-        case AccessorType.INDEXER:
-          path = `${path}[${key.name}]`;
-          break;
-        case AccessorType.KEY:
-          path = `${path}["${key.name}"]`;
-          break;
-        default:
-          throw new Error('Unknown type');
-      }
-    }
-    return path;
-  }
 }
 
 export class Spec {
@@ -100,8 +56,12 @@ export class Spec {
     return [];
   }
 
-  shortDescription(): HTMLElement {
+  shortDescription(preview: boolean): HTMLElement {
     return createSpan(`${this.type}`);
+  }
+
+  async getChildSpecs(): Promise<Spec[]> {
+    return [];
   }
 }
 
@@ -122,31 +82,41 @@ abstract class SequenceSpec extends Spec {
     return !!this.sequence.length;
   }
 
-  createHeader(): HTMLElement {
-    const element = createSpan('', []);
-    element.appendChild(
-        createSpan(`${this.path.key.name} (${this.length}) ${this.openBracket}`, []));
-    const items = [...this.sequence.items];
-    items.length = Math.min(items.length, 10);
+  shortDescription(preview: boolean): HTMLElement {
+    const element = createSpan('')
+    element.appendChild(createSpan(`(${this.length})${this.openBracket}`));
+    if (!preview) {
+      const items = [...this.sequence.items];
+      items.length = Math.min(items.length, 10);
 
-    const specs = items.map((item, index) => {
-      const path =
-          this.path.create(new Key(String(index), AccessorType.INDEXER));
-      return Spec.create(path, item);
-    });
+      const specs = items.map((item, index) => {
+        const path =
+            this.path.create(new Key(String(index), AccessorType.INDEXER));
+        return Spec.create(path, item);
+      });
 
-    specs.forEach((spec, index) => {
-      element.appendChild(spec.shortDescription());
-      if (index < specs.length - 1) {
-        element.appendChild(createSpan(', '));
+      specs.forEach((spec, index) => {
+        element.appendChild(spec.shortDescription(true));
+        if (index < specs.length - 1) {
+          element.appendChild(createSpan(', '));
+        }
+      });
+
+      if (this.sequence.length > specs.length) {
+        element.appendChild(createSpan(', \u2026'));
       }
-    });
-
-    if (this.sequence.length > specs.length) {
-      element.appendChild(createSpan(', \u2026'));
     }
 
     element.appendChild(createSpan(this.closeBracket, []));
+    return element;
+  }
+
+
+
+  createHeader(): HTMLElement {
+    const element = createSpan('', []);
+    element.appendChild(createSpan(`${this.path.key.name}: `));
+    element.appendChild(this.shortDescription(false));
     return element;
   }
 
@@ -157,6 +127,19 @@ abstract class SequenceSpec extends Spec {
       paths.push(this.path.create(new Key(i, AccessorType.INDEXER)));
     }
     return paths;
+  }
+
+  async getChildSpecs(): Promise<Spec[]> {
+    let json = this.sequence;
+    if (this.sequence.partial) {
+      json = <wire.SequenceSpec>(await service.getSpec(this.path));
+    }
+    const children = [];
+    for (let i = 0; i < json.items.length; ++i) {
+      const path = this.path.create(new Key(i, AccessorType.INDEXER));
+      children.push(Spec.create(path, json.items[i]));
+    }
+    return children;
   }
 
   abstract get openBracket(): string;
@@ -209,8 +192,7 @@ class InstanceSpec extends Spec {
   createHeader(): HTMLElement {
     const key = this.path.key;
     const element = createSpan(``);
-    element.appendChild(createSpan(`${this.path.key.name}`));
-    element.appendChild(createSpan(`: `));
+    element.appendChild(createSpan(`${this.path.key.name}: `));
     element.appendChild(createSpan(`${this.instance.type}`));
     return element;
   }
@@ -220,8 +202,25 @@ class InstanceSpec extends Spec {
   }
 
   getChildPaths(): Path[] {
-    return this.instance.keys.sort(comparePythonIdentifiers)
-        .map((key) => this.path.create(new Key(key, AccessorType.IDENTIFIER)));
+    return Object.keys(this.instance.contents)
+        .sort(comparePythonIdentifiers)
+        .map((identifier) => new Key(identifier, AccessorType.IDENTIFIER))
+        .map((key) => this.path.create(key));
+  }
+
+  async getChildSpecs(): Promise<Spec[]> {
+    let json = this.instance;
+    if (json.partial) {
+      json = <wire.InstanceSpec>(await service.getSpec(this.path));
+    }
+    const children = [];
+    const keys = Object.keys(json.contents)
+      .sort(comparePythonIdentifiers);
+    for (const key of keys) {
+      const path = this.path.create(new Key(key, AccessorType.IDENTIFIER));
+      children.push(Spec.create(path, json.contents[key]));
+    }
+    return children;
   }
 }
 
@@ -283,7 +282,22 @@ class DictSpec extends Spec {
   }
 
   hasItems(): boolean {
-    return !!Object.keys(this.dict.contents).length;
+    return this.dict.length > 0;
+  }
+
+  async getChildSpecs(): Promise<Spec[]> {
+    let json = this.dict;
+    if (this.dict.partial) {
+      json = <wire.DictSpec>(await service.getSpec(this.path));
+    }
+    const children = [];
+    const keys = Object.keys(json.contents)
+      .sort(comparePythonIdentifiers);
+    for (const key of keys) {
+      const path = this.path.create(new Key(key, AccessorType.KEY));
+      children.push(Spec.create(path, json.contents[key]));
+    }
+    return children;
   }
 
   get keys(): Key[] {
@@ -309,13 +323,17 @@ class PrimitiveSpec extends Spec {
   createHeader(): HTMLElement {
     const key = this.path.key;
     const element = createSpan(``, []);
-    element.appendChild(createSpan(`${this.path.key.name}: `, []));
-    element.appendChild(this.asElement(100));
+    element.appendChild(createSpan(`${this.path.key.name}: `));
+    element.appendChild(this.shortDescription(false));
     return element;
   }
 
-  shortDescription(): HTMLElement {
-    return this.asElement(10);
+  shortDescription(preview: boolean): HTMLElement {
+    if (preview) {
+      return this.asElement(10);
+    } else {
+      return this.asElement(100);
+    }
   }
 
   asElement(length: number): HTMLElement {
@@ -323,7 +341,7 @@ class PrimitiveSpec extends Spec {
     if (this.primitive.type === 'str') {
       element.appendChild(createSpan(`"`, ['type-str']));
     }
-    let str = this.primitive.string;
+    let str = this.primitive.description;
     if (str.length > length) {
       str = str.substr(0, length) + '\u2026';
     }

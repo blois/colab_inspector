@@ -45,6 +45,7 @@ setup(
         "tests": [
             "pytest",
             "six",
+            "numpy",
         ],
     }
 )
