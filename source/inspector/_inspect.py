@@ -2,8 +2,7 @@
 """
 import json
 import IPython
-import google.colab.output
-from google.colab.output import _js
+from google.colab import output
 import uuid
 
 _root = {}
@@ -17,7 +16,7 @@ def inspect(target):
     target: the object to be inspected.
   """
 
-  _js.register_callback('inspect.create_specification_for_js',
+  output.register_callback('inspect.create_specification_for_js',
                            create_specification_for_js)
 
   object_id = 'id_%s' % str(uuid.uuid4()).replace('-', '_')
@@ -35,7 +34,7 @@ def watch_globals():
   user_globals = IPython.get_ipython().user_global_ns
   _root['user_global_ns'] = user_globals
 
-  _js.register_callback('inspect.create_specification_for_js',
+  output.register_callback('inspect.create_specification_for_js',
                            create_specification_for_js)
   display(IPython.display.HTML('''
     <link rel='stylesheet' href='/nbextensions/google.colab.labs.inspector/inspector.css'>
@@ -51,7 +50,7 @@ def watch_globals():
     IPython.get_ipython().events.register('post_run_cell', _post_execute_hook)
 
 def _refresh_watchers():
-  display(IPython.display.HTML('''<script>
+  output.eval_js('''
     (() => {
       const frames = window.parent.frames;
       for (let i = 0; i < frames.length; ++i) {
@@ -62,8 +61,7 @@ def _refresh_watchers():
           }
         } catch(e) {}
       }
-    })();
-    </script>'''))
+    })()''')
 
 def create_specification_for_js(paths):
   """Creates a type specification for JS consumption.
@@ -165,9 +163,8 @@ def _fill_instance_spec(item, spec, preload=False):
   keys = dir(item)
   spec['length'] = len(keys)
 
-  length = min(0, len(keys)) if preload else min(100, len(keys))
+  length = min(0, len(keys)) if preload else min(1000, len(keys))
   keys.sort()
-  keys.reverse()
   keys = keys[0:length]
   spec['keys'] = keys
 
@@ -246,7 +243,6 @@ def _fill_dict_spec(item, spec, preload=False, include_private=True, filter_glob
   length = min(10, len(keys)) if preload else min(100, len(keys))
 
   keys.sort()
-  keys.reverse()
   keys = keys[0:length]
 
   contents = {}
