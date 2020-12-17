@@ -9,6 +9,7 @@
     "noEmitOnError": true,
     "strictNullChecks": true,
     "module": "commonjs",
+    "lib": ["DOM", "ES2017"],
     "removeComments": true,
   },
   "include": [

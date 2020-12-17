@@ -30,20 +30,17 @@ export class TreeItem<T> extends HTMLElement {
 
   static is = 'inspect-tree-item';
 
+  constructor(data: T, dataConverter: TreeItemConverter<T>) {
+    super();
+    this.data = data;
+    this.dataConverter = dataConverter;
+  }
+
   static create<T>(data: T, dataConverter: TreeItemConverter<T>): TreeItem<T> {
-    const item = document.createElement(TreeItem.is) as TreeItem<T>;
-    item.data = data;
-    item.dataConverter = dataConverter;
-    return item;
+    return new TreeItem<T>(data, dataConverter);
   }
 
-  createdCallback() {
-    this.indent = 0;
-    this.showHeader = true;
-    this.fetching_ = false;
-  }
-
-  attachedCallback() {
+  connectedCallback() {
     const toggle = document.createElement('div');
     const titleRow = document.createElement('div');
     if (this.showHeader) {
@@ -132,4 +129,4 @@ export class TreeItem<T> extends HTMLElement {
   }
 }
 
-document.registerElement('inspect-tree-item', TreeItem);
+customElements.define(TreeItem.is, TreeItem);
